@@ -1,0 +1,41 @@
+data:
+  raw_data_path: data/telco_customer_churn.csv
+  target_column: Churn
+  id_column: customerID
+
+features:
+  categorical_features:
+    - gender
+    - SeniorCitizen
+    - Partner
+    - Dependents
+    - PhoneService
+    - MultipleLines
+    - InternetService
+    - OnlineSecurity
+    - OnlineBackup
+    - DeviceProtection
+    - TechSupport
+    - StreamingTV
+    - StreamingMovies
+    - Contract
+    - PaperlessBilling
+    - PaymentMethod
+  numerical_features:
+    - tenure
+    - MonthlyCharges
+    - TotalCharges
+
+training:
+  test_size: 0.2
+  random_seed: 42
+  model_params:
+    C: 1.0
+    max_iter: 1000
+    solver: lbfgs
+
+artifacts:
+  output_dir: artifacts
+  model_filename: model.joblib
+  metrics_filename: metrics.json
+  feature_config_filename: feature_config.json

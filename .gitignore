@@ -5,6 +5,26 @@ build/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
 
 # Virtual environments
 .venv
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project artifacts
+artifacts/
+*.joblib
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
