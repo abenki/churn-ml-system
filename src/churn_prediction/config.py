@@ -77,6 +77,13 @@ class ArtifactsConfig(BaseModel):
     )
 
 
+class MLflowConfig(BaseModel):
+    """Configuration for MLflow."""
+
+    experiment_name: str = Field(default="churn-prediction", description="Experiment name")
+    enabled: bool = Field(default=True, description="Whether to track or not a pipeline run")
+
+
 class Settings(BaseSettings):
     """Main settings class combining all configurations."""
 
@@ -90,6 +97,7 @@ class Settings(BaseSettings):
     features: FeatureConfig = Field(default_factory=FeatureConfig)
     training: TrainingConfig = Field(default_factory=TrainingConfig)
     artifacts: ArtifactsConfig = Field(default_factory=ArtifactsConfig)
+    mlflow: MLflowConfig = Field(default_factory=MLflowConfig)
 
 
 def load_config(config_path: Path | None = None) -> Settings:

@@ -1,6 +1,7 @@
 """Main training pipeline orchestrating all components."""
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from churn_prediction.data import load_and_validate
 from churn_prediction.evaluation import evaluate_model
 from churn_prediction.features import prepare_features
 from churn_prediction.logging_config import get_logger, setup_logging
+from churn_prediction.tracking import Tracker
 from churn_prediction.training import create_training_pipeline, split_data, train_model
 
 logger = get_logger("pipeline")
@@ -36,20 +38,36 @@ def run_pipeline(settings: Settings) -> None:
     # Split data
     X_train, X_test, y_train, y_test = split_data(X, y, settings.training)
 
-    # Create and train model
-    pipeline = create_training_pipeline(
-        feature_config=settings.features,
-        model_params=settings.training.model_params,
-    )
-    pipeline = train_model(pipeline, X_train, y_train)
+    # Track with MLflow if enabled
+    tracker = Tracker(enabled=settings.mlflow.enabled)
+    with tracker.start_run(experiment_name=settings.mlflow.experiment_name):
+        # Log parameters
+        tracker.log_param("test_size", settings.training.test_size)
+        tracker.log_param("random_seed", settings.training.random_seed)
+        tracker.log_params(settings.training.model_params)
 
-    # Evaluate model
-    metrics = evaluate_model(pipeline, X_test, y_test)
+        # Create pipeline
+        pipeline = create_training_pipeline(
+            feature_config=settings.features,
+            model_params=settings.training.model_params,
+        )
+        pipeline = train_model(pipeline, X_train, y_train)
 
-    # Save artifacts
-    save_model(pipeline, settings.artifacts)
-    save_metrics(metrics, settings.artifacts)
-    save_feature_config(settings.features, settings.artifacts)
+        # Evaluate model
+        metrics = evaluate_model(pipeline, X_test, y_test)
+
+        # Log evaluation metrics
+        tracker.log_metrics(metrics.to_dict())
+
+        # Save artifacts
+        model_path = save_model(pipeline, settings.artifacts)
+        metrics_path = save_metrics(metrics, settings.artifacts)
+        feature_config_path = save_feature_config(settings.features, settings.artifacts)
+
+        # Log artifacts
+        tracker.log_artifact(str(model_path))
+        tracker.log_artifact(str(metrics_path))
+        tracker.log_artifact(str(feature_config_path))
 
     logger.info("Training pipeline completed successfully")
     logger.info(
@@ -76,9 +94,6 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    # Setup logging
-    import logging
-
     level = logging.DEBUG if args.verbose else logging.INFO
     setup_logging(level)
 
@@ -86,8 +101,8 @@ def main() -> int:
         settings = load_config(args.config)
         run_pipeline(settings)
         return 0
-    except Exception as e:
-        logger.error(f"Pipeline failed: {e}")
+    except Exception:
+        logger.exception("Pipeline failed")
         return 1
 
 

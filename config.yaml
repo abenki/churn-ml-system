@@ -39,3 +39,7 @@ artifacts:
   model_filename: model.joblib
   metrics_filename: metrics.json
   feature_config_filename: feature_config.json
+
+mlflow:
+  experiment_name: churn-prediction
+  enabled: True
